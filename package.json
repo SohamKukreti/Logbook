@@ -7,8 +7,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "npm run build:chrome && npm run build:firefox",
+    "build:chrome": "vite build",
+    "build:firefox": "TARGET=firefox vite build",
     "dev": "vite build --watch",
+    "dev:firefox": "TARGET=firefox vite build --watch",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

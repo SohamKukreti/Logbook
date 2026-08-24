@@ -22,7 +22,9 @@ const SESSION_GAP_MS = 5 * 60 * 1000; // >5 min away = new session
 // 30s heartbeat alarm, so leave generous headroom above it.
 const MAX_BLIND_CREDIT_MS = 150_000;
 
-chrome.idle.setDetectionInterval(IDLE_SECONDS);
+// Not available in Firefox; queryState(IDLE_SECONDS) still passes the
+// interval explicitly, so only onStateChanged timing differs slightly.
+chrome.idle.setDetectionInterval?.(IDLE_SECONDS);
 
 chrome.runtime.onInstalled.addListener(() => void init());
 chrome.runtime.onStartup.addListener(() => void init());

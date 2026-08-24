@@ -4,10 +4,6 @@
   "version": "0.2.0",
   "description": "Tracks time per website: visits, total time, and average time per session.",
   "permissions": ["tabs", "storage", "idle", "alarms", "notifications"],
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Logbook"

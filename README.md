@@ -1,6 +1,6 @@
 # Logbook
 
-A Chrome extension that tracks how you spend time on the web — visits, total
+A browser extension (Chrome and Firefox) that tracks how you spend time on the web — visits, total
 time, and average time per session for every site, styled like a page from a
 real ledger.
 
@@ -38,29 +38,42 @@ All data stays on your machine. Nothing is ever sent anywhere.
 
 ```sh
 npm install
-npm run build
+npm run build   # builds dist/chrome and dist/firefox
 ```
 
 Then in Chrome:
 
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
-3. Click **Load unpacked** and select the `dist/` directory
+3. Click **Load unpacked** and select the `dist/chrome/` directory
+
+Or in Firefox:
+
+1. Open `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on…** and select `dist/firefox/manifest.json`
+
+(Temporary add-ons are removed when Firefox closes. For a permanent
+install, submit the zipped `dist/firefox/` to addons.mozilla.org — free,
+with a self-distribution option.)
 
 ## Development
 
 ```sh
-npm run dev        # rebuild on file changes
-npm run typecheck  # TypeScript checks
+npm run dev            # rebuild Chrome build on file changes
+npm run dev:firefox    # same, for the Firefox build
+npm run build:chrome   # one-off Chrome build
+npm run build:firefox  # one-off Firefox build
+npm run typecheck      # TypeScript checks
 ```
 
 After a rebuild, click the reload button on the extension card in
-`chrome://extensions`.
+`chrome://extensions`, or **Reload** in `about:debugging` for Firefox.
 
 ## How it works
 
-The background service worker (`src/background.ts`) listens to tab, window,
-and idle events, plus a 30-second heartbeat alarm. On every tick it credits
+The background script (`src/background.ts` — a service worker in Chrome, an
+event page in Firefox) listens to tab, window, and idle events, plus a
+30-second heartbeat alarm. On every tick it credits
 elapsed time to the domain that had attention, splitting at local midnight.
 State survives service-worker restarts because it is persisted to storage on
 each tick, and a credit cap prevents phantom time after suspend/resume.
@@ -70,14 +83,21 @@ The popup (`popup.html`, `src/popup/`) reads today's record and renders it.
 ## Project structure
 
 ```
-public/manifest.json   Extension manifest (MV3)
+manifest/base.json     Shared extension manifest (MV3)
+manifest/chrome.json   Chrome-only manifest keys (service worker background)
+manifest/firefox.json  Firefox-only manifest keys (event page, gecko id)
 public/icons/          Extension icons (rendered from assets/logo.svg)
 assets/logo.svg        Logo source
-src/background.ts      Tracking engine + limit notifications (service worker)
+src/background.ts      Tracking engine + limit notifications (background script)
 src/popup/             Popup UI
 src/dashboard/         Dashboard page (charts, limits, export)
 src/lib/               Shared: domain folding, storage, formatting
 ```
+
+The build merges `manifest/base.json` with the per-browser overlay and
+writes the result into `dist/chrome/` or `dist/firefox/`. All source code
+is shared; the only browser difference in code is one optional call
+(`idle.setDetectionInterval`, Chrome-only).
 
 ## Permissions
 
