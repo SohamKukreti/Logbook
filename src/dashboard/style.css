@@ -166,16 +166,50 @@ section {
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  height: 180px;
-  padding-top: 8px;
+  height: 200px;
+  padding-top: 28px;
 }
 
 .col {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-width: 0;
+}
+
+/* Hover tooltip: the day's total time. */
+.tip {
+  display: none;
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 3px 9px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.col:hover .tip {
+  display: block;
+}
+
+.col:first-child .tip {
+  left: 0;
+  transform: none;
+}
+
+.col:last-child .tip {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 .bar-box {

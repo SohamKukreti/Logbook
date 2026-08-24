@@ -113,7 +113,11 @@ function renderChart(el: HTMLElement, dates: string[], site?: string): void {
     const total = totals[i] ?? 0;
     const col = document.createElement("div");
     col.className = "col";
-    col.title = `${date}: ${formatDuration(total)}`;
+
+    const tip = document.createElement("span");
+    tip.className = "tip";
+    tip.textContent = total > 0 ? formatDuration(total) : "0s";
+    col.appendChild(tip);
 
     const barBox = document.createElement("div");
     barBox.className = "bar-box";
