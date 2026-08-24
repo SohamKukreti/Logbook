@@ -1,0 +1,238 @@
+/* Logbook — a page from a ruled ledger.
+   Warm paper + ink in light mode; midnight ledger in dark.
+   Signature: red margin rule, stamped date, tally-mark visit counts. */
+
+:root {
+  color-scheme: light;
+  --paper: #fdfbf5;
+  --paper-deep: #f7f3e9;
+  --ink: #2a241b;
+  --ink-muted: rgba(42, 36, 27, 0.55);
+  --ink-faint: rgba(42, 36, 27, 0.28);
+  --feint: rgba(58, 84, 102, 0.25);
+  --red: #b23a2e;
+  --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 380px;
+  margin: 0;
+  padding: 16px 18px 18px 32px;
+  font: 16px/1.5 var(--display);
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--paper) 0%, var(--paper-deep) 100%);
+  position: relative;
+}
+
+/* The red margin rule of a real ledger page. */
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 18px;
+  width: 1px;
+  background: var(--red);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.eyebrow {
+  display: none;
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  font-variant: small-caps;
+  line-height: 1;
+}
+
+/* Date, rubber-stamped in the corner. */
+.stamp {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  padding: 3px 7px;
+  transform: rotate(-2deg);
+  opacity: 0.85;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+/* ---- The ledger table ---- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  padding: 0 0 6px;
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+.site-col {
+  text-align: left;
+}
+
+th.num,
+td.num {
+  text-align: right;
+  padding-left: 10px;
+  white-space: nowrap;
+}
+
+td {
+  padding: 10px 0 9px;
+  border-bottom: 1px solid var(--feint);
+  vertical-align: baseline;
+}
+
+td.site {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+td.num {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+#empty {
+  color: var(--ink-muted);
+  font-style: italic;
+  text-align: center;
+  margin: 22px 0;
+}
+
+/* ---- Ignored sites ---- */
+
+#ignore-section {
+  margin-top: 18px;
+}
+
+h2 {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--ink-faint);
+}
+
+#ignore-form {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+#ignore-input {
+  flex: 1;
+  padding: 4px 2px;
+  border: none;
+  border-bottom: 1px dotted var(--ink-faint);
+  background: transparent;
+  color: inherit;
+  font: 16px var(--display);
+}
+
+#ignore-input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+#ignore-input:focus,
+button:focus-visible {
+  outline: none;
+  border-color: var(--red);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--red);
+  outline-offset: 2px;
+}
+
+button {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red);
+  background: transparent;
+  border: 1px solid var(--red);
+  border-radius: 2px;
+  padding: 3px 9px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+button:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+
+#ignore-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+#ignore-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 3px;
+  border-bottom: 1px solid var(--feint);
+}
+
+#ignore-list li span {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+  color: var(--ink-muted);
+}
+
+#ignore-list button {
+  border: none;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.hint {
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-style: italic;
+  margin: 10px 0 0;
+}

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Logbook",
+  "version": "0.1.0",
+  "description": "Tracks time per website: visits, total time, and average time per session.",
+  "permissions": ["tabs", "storage", "idle", "alarms"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Logbook"
+  }
+}

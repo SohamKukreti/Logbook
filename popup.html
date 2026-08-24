@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Logbook</title>
+    <link rel="stylesheet" href="/src/popup/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="masthead">
+        <p class="eyebrow">Daily record</p>
+        <h1>Logbook</h1>
+      </div>
+      <span id="today-label" class="stamp"></span>
+    </header>
+
+    <main>
+      <table id="stats">
+        <thead>
+          <tr>
+            <th class="site-col">Site</th>
+            <th class="num">Visits</th>
+            <th class="num">Total</th>
+            <th class="num">Avg</th>
+          </tr>
+        </thead>
+        <tbody id="stats-body"></tbody>
+      </table>
+      <p id="empty" hidden>No entries yet today.</p>
+    </main>
+
+    <section id="ignore-section">
+      <h2>Ignored sites</h2>
+      <form id="ignore-form">
+        <input
+          id="ignore-input"
+          type="text"
+          placeholder="example.com"
+          autocomplete="off"
+          aria-label="Site to ignore"
+        />
+        <button type="submit">Add</button>
+      </form>
+      <ul id="ignore-list"></ul>
+      <p class="hint">Ignored sites are never recorded. Adding one deletes its stored data.</p>
+    </section>
+
+    <script type="module" src="/src/popup/main.ts"></script>
+  </body>
+</html>
