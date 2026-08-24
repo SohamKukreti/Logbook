@@ -179,11 +179,10 @@ section {
   min-width: 0;
 }
 
-/* Hover tooltip: the day's total time. */
+/* Hover tooltip: the day's total time, sitting just above its bar. */
 .tip {
   display: none;
   position: absolute;
-  top: -26px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--ink);
@@ -213,6 +212,7 @@ section {
 }
 
 .bar-box {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: flex-end;

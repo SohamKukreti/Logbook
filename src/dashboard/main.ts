@@ -114,17 +114,21 @@ function renderChart(el: HTMLElement, dates: string[], site?: string): void {
     const col = document.createElement("div");
     col.className = "col";
 
-    const tip = document.createElement("span");
-    tip.className = "tip";
-    tip.textContent = total > 0 ? formatDuration(total) : "0s";
-    col.appendChild(tip);
-
+    const pct = Math.max((total / max) * 100, total > 0 ? 2 : 0);
     const barBox = document.createElement("div");
     barBox.className = "bar-box";
     const bar = document.createElement("div");
     bar.className = "bar";
-    bar.style.height = `${Math.max((total / max) * 100, total > 0 ? 2 : 0)}%`;
+    bar.style.height = `${pct}%`;
     barBox.appendChild(bar);
+
+    if (total > 0) {
+      const tip = document.createElement("span");
+      tip.className = "tip";
+      tip.textContent = formatDuration(total);
+      tip.style.bottom = `calc(${pct}% + 6px)`;
+      barBox.appendChild(tip);
+    }
 
     const label = document.createElement("span");
     label.className = "bar-label";
