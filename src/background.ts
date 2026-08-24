@@ -9,6 +9,9 @@ import {
   dateKey,
   nextMidnight,
   pruneOldDays,
+  purgeDomain,
+  SETTINGS_KEY,
+  type Settings,
   type TrackerState,
 } from "./lib/storage";
 
@@ -42,6 +45,28 @@ chrome.tabs.onUpdated.addListener((_id, changeInfo, tab) => {
 chrome.windows.onFocusChanged.addListener(() => queueTick());
 chrome.idle.onStateChanged.addListener(() => queueTick());
 
+// When a site is newly ignored, the popup purges its data — but a tick that
+// was already in flight may write a last credit for it afterwards. Queue a
+// scrub behind the tick chain so the purge always wins.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes[SETTINGS_KEY]) return;
+  const before = (changes[SETTINGS_KEY].oldValue as Settings | undefined)?.ignore ?? [];
+  const after = (changes[SETTINGS_KEY].newValue as Settings | undefined)?.ignore ?? [];
+  const added = after.filter((d) => !before.includes(d));
+  if (added.length === 0) return;
+  chain = chain
+    .then(async () => {
+      const state = await getState();
+      for (const domain of added) {
+        if (state.currentDomain === domain) state.currentDomain = null;
+        delete state.lastSeen[domain];
+        await purgeDomain(domain);
+      }
+      await setState(state);
+    })
+    .catch((e) => console.error("ignore scrub failed", e));
+});
+
 // Serialize ticks so concurrent events cannot race on storage.
 let chain: Promise<void> = Promise.resolve();
 function queueTick(): void {
@@ -57,7 +82,14 @@ function queueTick(): void {
 async function tick(): Promise<void> {
   const now = Date.now();
   const state = await getState();
-  const eligible = await getEligibleDomain();
+  const settings = await getSettings();
+  const eligible = await getEligibleDomain(settings);
+
+  // Never credit a domain that has been ignored since the last tick.
+  if (state.currentDomain && settings.ignore.includes(state.currentDomain)) {
+    delete state.lastSeen[state.currentDomain];
+    state.currentDomain = null;
+  }
 
   if (state.currentDomain && state.lastTick > 0 && now > state.lastTick) {
     const elapsed = Math.min(now - state.lastTick, MAX_BLIND_CREDIT_MS);
@@ -165,7 +197,7 @@ function notify(id: string, title: string, message: string): void {
   });
 }
 
-async function getEligibleDomain(): Promise<string | null> {
+async function getEligibleDomain(settings: Settings): Promise<string | null> {
   const win = await chrome.windows
     .getLastFocused({ windowTypes: ["normal"] })
     .catch(() => null);
@@ -176,8 +208,6 @@ async function getEligibleDomain(): Promise<string | null> {
 
   const domain = domainFromUrl(tab.url);
   if (!domain) return null;
-
-  const settings = await getSettings();
   if (settings.ignore.includes(domain)) return null;
 
   const idleState = await chrome.idle.queryState(IDLE_SECONDS);

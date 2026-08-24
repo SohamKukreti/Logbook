@@ -6,6 +6,8 @@ import {
   getSettings,
   setSettings,
   purgeDomain,
+  DAY_PREFIX,
+  SETTINGS_KEY,
   type DayRecord,
 } from "../lib/storage";
 
@@ -315,6 +317,27 @@ async function main(): Promise<void> {
 
   $("export-json").addEventListener("click", () => {
     download("logbook.json", JSON.stringify(exportRows(), null, 2), "application/json");
+  });
+
+  // Live-update: the background worker writes day records as time passes;
+  // re-render whatever is on screen when stored data changes.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    let daysChanged = false;
+    for (const [key, change] of Object.entries(changes)) {
+      if (!key.startsWith(DAY_PREFIX)) continue;
+      const date = key.slice(DAY_PREFIX.length);
+      if (change.newValue === undefined) delete days[date];
+      else days[date] = change.newValue as DayRecord;
+      daysChanged = true;
+    }
+    if (daysChanged) {
+      renderSummary();
+      renderChart($("chart"), datesBack(range));
+      renderTable();
+      if (selectedSite) showSite(selectedSite);
+    }
+    if (changes[SETTINGS_KEY]) void renderLimits();
   });
 }
 
