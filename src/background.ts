@@ -76,6 +76,33 @@ async function tick(): Promise<void> {
   pruneLastSeen(state, now);
   await setState(state);
   await checkLimits(now);
+  await updateBadge(eligible, now);
+}
+
+/* ---- Toolbar badge: time spent today on the site you are on now. ---- */
+
+/** "0m" … "59m", then "1h05" … "9h59", then "10h" and up. */
+function badgeText(ms: number): string {
+  const minutes = Math.floor(ms / 60_000);
+  const h = Math.floor(minutes / 60);
+  if (h === 0) return `${minutes}m`;
+  if (h < 10) return `${h}h${String(minutes % 60).padStart(2, "0")}`;
+  return `${h}h`;
+}
+
+async function updateBadge(domain: string | null, now: number): Promise<void> {
+  if (!domain) {
+    await chrome.action.setBadgeText({ text: "" });
+    return;
+  }
+  const day = await getDay(now);
+  const used = day[domain]?.totalMs ?? 0;
+  const settings = await getSettings();
+  const limitMin = settings.limits[domain];
+  const over = limitMin !== undefined && limitMin > 0 && used >= limitMin * 60_000;
+  await chrome.action.setBadgeBackgroundColor({ color: over ? "#b23a2e" : "#2a241b" });
+  await chrome.action.setBadgeTextColor({ color: "#fdfbf5" });
+  await chrome.action.setBadgeText({ text: badgeText(used) });
 }
 
 /* ---- Daily limits: notify at 80% and at 100%, once per site per day. ---- */

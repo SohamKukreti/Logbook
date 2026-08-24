@@ -17,6 +17,9 @@ All data stays on your machine. Nothing is ever sent anywhere.
   sessions, not raw tab activations.
 - **Per-domain stats** — subdomains fold into the main domain
   (`music.youtube.com` counts as `youtube.com`).
+- **Toolbar badge** — the extension icon shows how long you have been on the
+  current site today ("42m", "1h05"). It turns red once the site is over its
+  daily limit.
 - **Daily popup** — today's sites sorted by time, with visits, total time,
   and average time per session.
 - **Dashboard** — a full page with a weekly summary (this week vs last week,
