@@ -236,3 +236,21 @@ button:hover {
   font-style: italic;
   margin: 10px 0 0;
 }
+
+footer {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.dash-link {
+  font: 15px var(--display);
+  color: var(--red);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.dash-link:hover {
+  text-decoration: underline;
+}

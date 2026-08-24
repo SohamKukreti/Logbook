@@ -97,6 +97,10 @@ async function refresh(): Promise<void> {
   await renderIgnoreList();
 }
 
+document.getElementById("open-dashboard")!.addEventListener("click", () => {
+  void chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
+});
+
 ignoreForm.addEventListener("submit", (e) => {
   e.preventDefault();
   void addIgnore(ignoreInput.value);

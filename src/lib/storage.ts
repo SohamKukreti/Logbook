@@ -17,6 +17,8 @@ export interface TrackerState {
 
 export interface Settings {
   ignore: string[];
+  /** domain -> daily limit in minutes. */
+  limits: Record<string, number>;
 }
 
 export const STATE_KEY = "state";
@@ -29,7 +31,7 @@ export function defaultState(): TrackerState {
 }
 
 export function defaultSettings(): Settings {
-  return { ignore: [] };
+  return { ignore: [], limits: {} };
 }
 
 /** Local-time date key, e.g. "2026-08-24". */
@@ -62,7 +64,8 @@ export async function setState(state: TrackerState): Promise<void> {
 
 export async function getSettings(): Promise<Settings> {
   const res = await chrome.storage.local.get(SETTINGS_KEY);
-  return (res[SETTINGS_KEY] as Settings | undefined) ?? defaultSettings();
+  // Merge so settings saved by older versions gain new fields.
+  return { ...defaultSettings(), ...(res[SETTINGS_KEY] as Partial<Settings> | undefined) };
 }
 
 export async function setSettings(settings: Settings): Promise<void> {
@@ -77,6 +80,18 @@ export async function getDay(ts: number): Promise<DayRecord> {
 
 export async function setDay(ts: number, rec: DayRecord): Promise<void> {
   await chrome.storage.local.set({ [dayStorageKey(ts)]: rec });
+}
+
+/** All stored days: date key ("YYYY-MM-DD") -> record. */
+export async function getAllDays(): Promise<Record<string, DayRecord>> {
+  const all = await chrome.storage.local.get(null);
+  const out: Record<string, DayRecord> = {};
+  for (const [key, value] of Object.entries(all)) {
+    if (key.startsWith(DAY_PREFIX)) {
+      out[key.slice(DAY_PREFIX.length)] = value as DayRecord;
+    }
+  }
+  return out;
 }
 
 /** Delete day records older than RETENTION_DAYS. */

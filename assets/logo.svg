@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Logbook mark: a ledger page — cream paper, red margin rule, ink entries -->
+  <rect x="10" y="6" width="108" height="116" rx="14" fill="#fdfbf5" stroke="#2a241b" stroke-width="7"/>
+  <!-- red margin rule -->
+  <line x1="42" y1="13" x2="42" y2="115" stroke="#b23a2e" stroke-width="6"/>
+  <!-- ink entry lines -->
+  <line x1="56" y1="40" x2="102" y2="40" stroke="#2a241b" stroke-width="8" stroke-linecap="round"/>
+  <line x1="56" y1="64" x2="102" y2="64" stroke="#2a241b" stroke-width="8" stroke-linecap="round"/>
+  <line x1="56" y1="88" x2="88" y2="88" stroke="#2a241b" stroke-width="8" stroke-linecap="round"/>
+  <!-- red tick in the margin: today's entry -->
+  <circle cx="26" cy="88" r="6" fill="#b23a2e"/>
+</svg>

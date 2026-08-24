@@ -1,10 +1,12 @@
 import { domainFromUrl } from "./lib/domain";
+import { formatDuration } from "./lib/format";
 import {
   getSettings,
   getState,
   setState,
   getDay,
   setDay,
+  dateKey,
   nextMidnight,
   pruneOldDays,
   type TrackerState,
@@ -73,6 +75,67 @@ async function tick(): Promise<void> {
 
   pruneLastSeen(state, now);
   await setState(state);
+  await checkLimits(now);
+}
+
+/* ---- Daily limits: notify at 80% and at 100%, once per site per day. ---- */
+
+const NOTICES_KEY = "limitNotices";
+
+interface LimitNotices {
+  date: string;
+  fired: Record<string, { warn?: boolean; limit?: boolean }>;
+}
+
+async function checkLimits(now: number): Promise<void> {
+  const settings = await getSettings();
+  const limited = Object.keys(settings.limits);
+  if (limited.length === 0) return;
+
+  const today = dateKey(now);
+  const res = await chrome.storage.local.get(NOTICES_KEY);
+  let notices = res[NOTICES_KEY] as LimitNotices | undefined;
+  if (!notices || notices.date !== today) notices = { date: today, fired: {} };
+
+  const day = await getDay(now);
+  let changed = false;
+
+  for (const domain of limited) {
+    const limitMs = (settings.limits[domain] ?? 0) * 60_000;
+    if (limitMs <= 0) continue;
+    const used = day[domain]?.totalMs ?? 0;
+    const fired = notices.fired[domain] ?? (notices.fired[domain] = {});
+
+    if (!fired.limit && used >= limitMs) {
+      fired.limit = true;
+      fired.warn = true;
+      changed = true;
+      notify(
+        `limit-${domain}-${now}`,
+        `Time limit reached: ${domain}`,
+        `You have spent ${formatDuration(used)} today. Your limit is ${formatDuration(limitMs)}.`,
+      );
+    } else if (!fired.warn && used >= limitMs * 0.8) {
+      fired.warn = true;
+      changed = true;
+      notify(
+        `warn-${domain}-${now}`,
+        `Close to your limit: ${domain}`,
+        `${formatDuration(used)} of ${formatDuration(limitMs)} used today.`,
+      );
+    }
+  }
+
+  if (changed) await chrome.storage.local.set({ [NOTICES_KEY]: notices });
+}
+
+function notify(id: string, title: string, message: string): void {
+  chrome.notifications.create(id, {
+    type: "basic",
+    iconUrl: "icons/icon128.png",
+    title,
+    message,
+  });
 }
 
 async function getEligibleDomain(): Promise<string | null> {

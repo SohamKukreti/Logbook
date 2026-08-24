@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Logbook — Dashboard</title>
+    <link rel="stylesheet" href="/src/dashboard/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Logbook</h1>
+      <div class="header-right">
+        <div class="range-toggle" role="group" aria-label="Date range">
+          <button id="range-7" class="active">7 days</button>
+          <button id="range-30">30 days</button>
+        </div>
+        <span id="today-label" class="stamp"></span>
+      </div>
+    </header>
+
+    <!-- Weekly summary -->
+    <section id="summary">
+      <div class="summary-main">
+        <p class="label">This week</p>
+        <p class="big" id="week-total"></p>
+        <p class="compare" id="week-compare"></p>
+      </div>
+      <div id="summary-sites"></div>
+    </section>
+
+    <!-- Overview: chart + table -->
+    <div id="overview">
+      <section>
+        <h2 id="chart-title">Time per day</h2>
+        <div id="chart" class="chart"></div>
+      </section>
+
+      <section>
+        <h2 id="table-title">Sites</h2>
+        <table id="sites-table">
+          <thead>
+            <tr>
+              <th class="site-col">Site</th>
+              <th class="num">Visits</th>
+              <th class="num">Total</th>
+              <th class="num">Avg</th>
+            </tr>
+          </thead>
+          <tbody id="sites-body"></tbody>
+        </table>
+        <p id="empty" hidden>No entries in this range.</p>
+        <p class="hint">Click a site to see its history.</p>
+      </section>
+    </div>
+
+    <!-- Per-site drill-down -->
+    <div id="site-view" hidden>
+      <button id="back" class="linkish">&larr; All sites</button>
+      <section>
+        <h2 id="site-name"></h2>
+        <p id="site-stats" class="site-stats"></p>
+        <div id="site-chart" class="chart"></div>
+      </section>
+    </div>
+
+    <!-- Limits -->
+    <section id="limits">
+      <h2>Daily limits</h2>
+      <p class="hint">
+        Get a notification at 80% and at 100% of a site's daily limit.
+      </p>
+      <form id="limit-form">
+        <input id="limit-site" type="text" placeholder="youtube.com" autocomplete="off" aria-label="Site" />
+        <input id="limit-minutes" type="number" min="1" placeholder="60" aria-label="Minutes per day" />
+        <span class="unit">min/day</span>
+        <button type="submit">Set</button>
+      </form>
+      <ul id="limit-list"></ul>
+    </section>
+
+    <!-- Export -->
+    <section id="export">
+      <h2>Export</h2>
+      <p class="hint">Everything stored (up to 90 days), one row per site per day.</p>
+      <div class="export-buttons">
+        <button id="export-csv">Download CSV</button>
+        <button id="export-json">Download JSON</button>
+      </div>
+    </section>
+
+    <script type="module" src="/src/dashboard/main.ts"></script>
+  </body>
+</html>

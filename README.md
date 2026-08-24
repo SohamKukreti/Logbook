@@ -19,6 +19,13 @@ All data stays on your machine. Nothing is ever sent anywhere.
   (`music.youtube.com` counts as `youtube.com`).
 - **Daily popup** — today's sites sorted by time, with visits, total time,
   and average time per session.
+- **Dashboard** — a full page with a weekly summary (this week vs last week,
+  overall and for your top sites), a time-per-day bar chart (7 or 30 days),
+  and a per-site drill-down with each site's daily history.
+- **Daily limits** — set a per-site limit in minutes and get a notification
+  at 80% and at 100% of it, once per site per day.
+- **Export** — download everything stored as CSV or JSON, one row per site
+  per day.
 - **Ignore list** — ignored sites are never recorded; adding one also deletes
   its stored data.
 - **Local only** — data lives in `chrome.storage.local`, kept per-day for
@@ -61,16 +68,19 @@ The popup (`popup.html`, `src/popup/`) reads today's record and renders it.
 
 ```
 public/manifest.json   Extension manifest (MV3)
-src/background.ts      Tracking engine (service worker)
+public/icons/          Extension icons (rendered from assets/logo.svg)
+assets/logo.svg        Logo source
+src/background.ts      Tracking engine + limit notifications (service worker)
 src/popup/             Popup UI
+src/dashboard/         Dashboard page (charts, limits, export)
 src/lib/               Shared: domain folding, storage, formatting
 ```
 
 ## Permissions
 
 `tabs` (which site is active), `storage` (local stats), `idle` (stop the
-clock when away), `alarms` (heartbeat). No host permissions, no network
-access.
+clock when away), `alarms` (heartbeat), `notifications` (daily limit
+alerts). No host permissions, no network access.
 
 ## License
 
