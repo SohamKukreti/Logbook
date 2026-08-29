@@ -21,6 +21,7 @@ let days: Record<string, DayRecord> = {};
 let settings: Settings = defaultSettings();
 let range = 7;
 let selectedSite: string | null = null;
+let overviewScroll = 0;
 
 /* ---- date helpers ---- */
 
@@ -255,7 +256,12 @@ function renderTable(): void {
     if (!isOther) {
       tr.tabIndex = 0;
       tr.setAttribute("role", "button");
-      const open = () => showSite(site);
+      const open = () => {
+        // Remember where the list was scrolled to, then open at the top.
+        overviewScroll = window.scrollY;
+        showSite(site);
+        window.scrollTo(0, 0);
+      };
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") open();
@@ -296,6 +302,7 @@ function showOverview(): void {
   $("site-view").hidden = true;
   $("overview").hidden = false;
   $("range-toggle").hidden = false;
+  window.scrollTo(0, overviewScroll);
 }
 
 /* ---- site limit row ---- */
