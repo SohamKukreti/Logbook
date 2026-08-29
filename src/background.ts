@@ -35,25 +35,29 @@ async function init(): Promise<void> {
   await pruneOldDays(Date.now());
   const settings = await getSettings();
   await pruneSites(settings.pinned);
-  await injectIntoOpenTabs();
   queueTick();
 }
 
-// Manifest content_scripts only reach pages loaded after install/update,
-// so tabs that are already open would never show in-page limit notices.
-// Inject the script into them once; the script guards against doubles.
-async function injectIntoOpenTabs(): Promise<void> {
-  const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
-  for (const tab of tabs) {
-    if (tab.id === undefined) continue;
+/**
+ * Deliver a message to one tab's content script, injecting the script
+ * first when it isn't there yet. Host access is optional and granted
+ * per site when the user sets a limit, so injection can fail — the
+ * caller falls back to a system notification in that case.
+ */
+async function sendToTab(tabId: number, message: object): Promise<boolean> {
+  try {
+    await chrome.tabs.sendMessage(tabId, message);
+    return true;
+  } catch {
     try {
       await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
+        target: { tabId },
         files: ["content.js"],
       });
+      await chrome.tabs.sendMessage(tabId, message);
+      return true;
     } catch {
-      // Restricted page or missing host permission; the system
-      // notification fallback still covers this tab.
+      return false; // no host access for this site, or a restricted page
     }
   }
 }
@@ -196,11 +200,7 @@ async function scheduleThresholdAlarm(domain: string | null, now: number): Promi
   for (const tab of tabs) {
     if (tab.id === undefined || !tab.url) continue;
     if (domainFromUrl(tab.url) !== domain) continue;
-    try {
-      await chrome.tabs.sendMessage(tab.id, { type: "logbook-limit-eta", msToGo });
-    } catch {
-      // No content script here; the alarm fallback covers it.
-    }
+    await sendToTab(tab.id, { type: "logbook-limit-eta", msToGo });
   }
 }
 
@@ -297,23 +297,7 @@ async function alertUser(
   for (const tab of tabs) {
     if (tab.id === undefined || !tab.url) continue;
     if (domainFromUrl(tab.url) !== domain) continue;
-    try {
-      await chrome.tabs.sendMessage(tab.id, message);
-      delivered = true;
-    } catch {
-      // No content script listening (tab predates the extension, or its
-      // script was orphaned by a reload). Inject now and resend.
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ["content.js"],
-        });
-        await chrome.tabs.sendMessage(tab.id, message);
-        delivered = true;
-      } catch {
-        // Restricted page; the notification fallback covers it.
-      }
-    }
+    if (await sendToTab(tab.id, message)) delivered = true;
   }
   if (delivered) return;
 

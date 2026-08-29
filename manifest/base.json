@@ -4,14 +4,7 @@
   "version": "0.3.0",
   "description": "Tracks time per website: visits, total time, and average time per session.",
   "permissions": ["tabs", "storage", "idle", "alarms", "notifications", "scripting"],
-  "host_permissions": ["http://*/*", "https://*/*"],
-  "content_scripts": [
-    {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Logbook"

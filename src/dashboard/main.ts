@@ -570,6 +570,25 @@ function renderDow(site: string): void {
 
 /* ---- limits ---- */
 
+/** Both the bare domain and its subdomains, which fold into it. */
+function originPatterns(domain: string): string[] {
+  return [`*://${domain}/*`, `*://*.${domain}/*`];
+}
+
+/**
+ * Ask the browser for access to a site so limit warnings can appear on
+ * the page itself. Must be called straight from the user's gesture (the
+ * limit form submit), before any await. Denying is fine — warnings for
+ * that site fall back to system notifications.
+ */
+function requestSiteAccess(domain: string): void {
+  try {
+    void chrome.permissions.request({ origins: originPatterns(domain) }).catch(() => {});
+  } catch {
+    // Not callable here (no gesture); the notification fallback covers it.
+  }
+}
+
 function renderLimits(): void {
   const list = $<HTMLUListElement>("limit-list");
   list.replaceChildren();
@@ -665,6 +684,7 @@ async function main(): Promise<void> {
     const input = $<HTMLInputElement>("site-limit-minutes");
     const minutes = Number(input.value);
     if (!Number.isFinite(minutes) || minutes < 1) return;
+    requestSiteAccess(selectedSite);
     const s = await getSettings();
     s.limits[selectedSite] = Math.round(minutes);
     await setSettings(s);
@@ -683,6 +703,7 @@ async function main(): Promise<void> {
     const site = domainFromInput($<HTMLInputElement>("limit-site").value);
     const minutes = Number($<HTMLInputElement>("limit-minutes").value);
     if (!site || !Number.isFinite(minutes) || minutes < 1) return;
+    requestSiteAccess(site);
     const s = await getSettings();
     s.limits[site] = Math.round(minutes);
     await setSettings(s);
