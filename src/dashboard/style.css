@@ -160,6 +160,10 @@ section {
   min-width: 130px;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* ---- Bar chart ---- */
 
 .chart {
@@ -238,7 +242,10 @@ section {
   text-align: center;
   padding-top: 4px;
   height: 20px;
-  overflow: hidden;
+  /* Columns get narrow on the 30-day view; let the date spill
+     over its neighbors (labels are 5 columns apart there). */
+  overflow: visible;
+  margin: 0 -14px;
   white-space: nowrap;
 }
 

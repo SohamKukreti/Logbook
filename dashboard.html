@@ -11,6 +11,7 @@
       <h1>Logbook</h1>
       <div class="header-right">
         <div class="range-toggle" role="group" aria-label="Date range">
+          <button id="range-1">Today</button>
           <button id="range-7" class="active">7 days</button>
           <button id="range-30">30 days</button>
         </div>
@@ -21,7 +22,7 @@
     <!-- Weekly summary -->
     <section id="summary">
       <div class="summary-main">
-        <p class="label">This week</p>
+        <p class="label" id="summary-label">This week</p>
         <p class="big" id="week-total"></p>
         <p class="compare" id="week-compare"></p>
       </div>
@@ -30,7 +31,7 @@
 
     <!-- Overview: chart + table -->
     <div id="overview">
-      <section>
+      <section id="chart-section">
         <h2 id="chart-title">Time per day</h2>
         <div id="chart" class="chart"></div>
       </section>

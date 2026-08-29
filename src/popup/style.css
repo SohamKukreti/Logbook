@@ -113,6 +113,28 @@ td.num {
   font-variant-numeric: tabular-nums;
 }
 
+.more-row td {
+  padding: 8px 0 7px;
+  text-align: center;
+}
+
+.more-link {
+  font: italic 14px var(--display);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.more-link:hover {
+  color: var(--red);
+  background: none;
+  text-decoration: underline;
+}
+
 #empty {
   color: var(--ink-muted);
   font-style: italic;

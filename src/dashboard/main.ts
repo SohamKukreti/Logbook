@@ -63,16 +63,21 @@ function aggregate(dates: string[]): Record<string, { totalMs: number; sessions:
 /* ---- weekly summary ---- */
 
 function renderSummary(): void {
-  const thisWeek = datesBack(7);
-  const lastWeek = datesBack(7, 7);
-  const thisTotal = thisWeek.reduce((s, d) => s + dayTotal(days[d]), 0);
-  const lastTotal = lastWeek.reduce((s, d) => s + dayTotal(days[d]), 0);
+  // The summary follows the selected range: today vs yesterday,
+  // this week vs last week, or this month vs last month.
+  const title = range === 1 ? "Today" : range === 7 ? "This week" : "This month";
+  const cmpLabel = range === 1 ? "yesterday" : range === 7 ? "last week" : "last month";
+  const current = datesBack(range);
+  const previous = datesBack(range, range);
+  const thisTotal = current.reduce((s, d) => s + dayTotal(days[d]), 0);
+  const lastTotal = previous.reduce((s, d) => s + dayTotal(days[d]), 0);
 
+  $("summary-label").textContent = title;
   $("week-total").textContent = formatDuration(thisTotal);
-  $("week-compare").textContent = compareText(thisTotal, lastTotal, "last week");
+  $("week-compare").textContent = compareText(thisTotal, lastTotal, cmpLabel);
 
-  const agg = aggregate(thisWeek);
-  const lastAgg = aggregate(lastWeek);
+  const agg = aggregate(current);
+  const lastAgg = aggregate(previous);
   const top = Object.entries(agg)
     .sort(([, a], [, b]) => b.totalMs - a.totalMs)
     .slice(0, 3);
@@ -90,7 +95,7 @@ function renderSummary(): void {
     val.textContent = formatDuration(s.totalMs);
     const cmp = document.createElement("p");
     cmp.className = "compare";
-    cmp.textContent = compareText(s.totalMs, lastAgg[site]?.totalMs ?? 0, "last week");
+    cmp.textContent = compareText(s.totalMs, lastAgg[site]?.totalMs ?? 0, cmpLabel);
     card.append(name, val, cmp);
     wrap.appendChild(card);
   }
@@ -200,10 +205,12 @@ function showSite(site: string): void {
   const dates = datesBack(range);
   const agg = aggregate(dates)[site] ?? { totalMs: 0, sessions: 0 };
   const avg = agg.sessions > 0 ? agg.totalMs / agg.sessions : 0;
+  const label = range === 1 ? "Today" : `Last ${range} days`;
   $("site-stats").textContent =
-    `Last ${range} days: ${formatDuration(agg.totalMs)} across ` +
+    `${label}: ${formatDuration(agg.totalMs)} across ` +
     `${agg.sessions} visit${agg.sessions === 1 ? "" : "s"} — ` +
     `${formatDuration(avg)} per visit on average.`;
+  $("site-chart").hidden = range === 1;
   renderChart($("site-chart"), dates, site);
 }
 
@@ -266,12 +273,20 @@ function download(name: string, content: string, type: string): void {
 
 /* ---- wiring ---- */
 
+function rangeLabel(): string {
+  return range === 1 ? "today" : `last ${range} days`;
+}
+
 function setRange(n: number): void {
   range = n;
+  $("range-1").classList.toggle("active", n === 1);
   $("range-7").classList.toggle("active", n === 7);
   $("range-30").classList.toggle("active", n === 30);
-  $("chart-title").textContent = `Time per day — last ${n} days`;
-  $("table-title").textContent = `Sites — last ${n} days`;
+  // A one-day range would chart a single bar; show the table only.
+  $("chart-section").hidden = n === 1;
+  renderSummary();
+  $("chart-title").textContent = `Time per day — ${rangeLabel()}`;
+  $("table-title").textContent = `Sites — ${rangeLabel()}`;
   renderChart($("chart"), datesBack(n));
   renderTable();
   if (selectedSite) showSite(selectedSite);
@@ -286,10 +301,10 @@ async function main(): Promise<void> {
     day: "numeric",
   });
 
-  renderSummary();
   setRange(7);
   await renderLimits();
 
+  $("range-1").addEventListener("click", () => setRange(1));
   $("range-7").addEventListener("click", () => setRange(7));
   $("range-30").addEventListener("click", () => setRange(30));
   $("back").addEventListener("click", showOverview);

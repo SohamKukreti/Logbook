@@ -16,6 +16,8 @@ const ignoreForm = document.getElementById("ignore-form") as HTMLFormElement;
 const ignoreInput = document.getElementById("ignore-input") as HTMLInputElement;
 const ignoreList = document.getElementById("ignore-list") as HTMLUListElement;
 
+const MAX_ROWS = 10;
+
 function renderStats(day: DayRecord): void {
   const rows = Object.entries(day)
     .filter(([, s]) => s.totalMs > 0 || s.sessions > 0)
@@ -25,7 +27,9 @@ function renderStats(day: DayRecord): void {
   statsTable.hidden = rows.length === 0;
   emptyMsg.hidden = rows.length > 0;
 
-  for (const [domain, s] of rows) {
+  const hidden = rows.length - MAX_ROWS;
+
+  for (const [domain, s] of rows.slice(0, MAX_ROWS)) {
     const tr = document.createElement("tr");
     const avg = s.sessions > 0 ? s.totalMs / s.sessions : 0;
 
@@ -52,6 +56,25 @@ function renderStats(day: DayRecord): void {
     tr.append(siteTd, visitsTd, totalTd, avgTd);
     statsBody.appendChild(tr);
   }
+
+  if (hidden > 0) {
+    const tr = document.createElement("tr");
+    tr.className = "more-row";
+    const td = document.createElement("td");
+    td.colSpan = 4;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "more-link";
+    btn.textContent = `+ ${hidden} more in dashboard →`;
+    btn.addEventListener("click", openDashboard);
+    td.appendChild(btn);
+    tr.appendChild(td);
+    statsBody.appendChild(tr);
+  }
+}
+
+function openDashboard(): void {
+  void chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
 }
 
 
@@ -97,9 +120,7 @@ async function refresh(): Promise<void> {
   await renderIgnoreList();
 }
 
-document.getElementById("open-dashboard")!.addEventListener("click", () => {
-  void chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
-});
+document.getElementById("open-dashboard")!.addEventListener("click", openDashboard);
 
 ignoreForm.addEventListener("submit", (e) => {
   e.preventDefault();
