@@ -13,3 +13,6 @@ npm-debug.log*
 .idea/
 .DS_Store
 *.swp
+
+# Packaged extensions
+*.zip
