@@ -35,11 +35,31 @@ async function init(): Promise<void> {
   await pruneOldDays(Date.now());
   const settings = await getSettings();
   await pruneSites(settings.pinned);
+  await injectIntoOpenTabs();
   queueTick();
 }
 
+// Manifest content_scripts only reach pages loaded after install/update,
+// so tabs that are already open would never show in-page limit notices.
+// Inject the script into them once; the script guards against doubles.
+async function injectIntoOpenTabs(): Promise<void> {
+  const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
+  for (const tab of tabs) {
+    if (tab.id === undefined) continue;
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ["content.js"],
+      });
+    } catch {
+      // Restricted page or missing host permission; the system
+      // notification fallback still covers this tab.
+    }
+  }
+}
+
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "heartbeat") queueTick();
+  if (alarm.name === "heartbeat" || alarm.name === LIMIT_ALARM) queueTick();
 });
 chrome.tabs.onActivated.addListener(() => queueTick());
 chrome.tabs.onUpdated.addListener((_id, changeInfo, tab) => {
@@ -55,8 +75,34 @@ chrome.idle.onStateChanged.addListener(() => queueTick());
 // scrub behind the tick chain so the purge always wins.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes[SETTINGS_KEY]) return;
-  const before = (changes[SETTINGS_KEY].oldValue as Settings | undefined)?.ignore ?? [];
-  const after = (changes[SETTINGS_KEY].newValue as Settings | undefined)?.ignore ?? [];
+  const oldSettings = changes[SETTINGS_KEY].oldValue as Settings | undefined;
+  const newSettings = changes[SETTINGS_KEY].newValue as Settings | undefined;
+
+  // A limit that was added or changed re-arms that site's daily alerts,
+  // so a new threshold can warn again the same day.
+  const beforeLimits = oldSettings?.limits ?? {};
+  const afterLimits = newSettings?.limits ?? {};
+  const rearm = Object.keys(afterLimits).filter((d) => afterLimits[d] !== beforeLimits[d]);
+  if (rearm.length > 0) {
+    chain = chain
+      .then(async () => {
+        const res = await chrome.storage.local.get(NOTICES_KEY);
+        const notices = res[NOTICES_KEY] as LimitNotices | undefined;
+        if (!notices) return;
+        let touched = false;
+        for (const domain of rearm) {
+          if (notices.fired[domain]) {
+            delete notices.fired[domain];
+            touched = true;
+          }
+        }
+        if (touched) await chrome.storage.local.set({ [NOTICES_KEY]: notices });
+      })
+      .catch((e) => console.error("limit re-arm failed", e));
+  }
+
+  const before = oldSettings?.ignore ?? [];
+  const after = newSettings?.ignore ?? [];
   const added = after.filter((d) => !before.includes(d));
   if (added.length === 0) return;
   chain = chain
@@ -113,8 +159,55 @@ async function tick(): Promise<void> {
   pruneLastSeen(state, now);
   await setState(state);
   await checkLimits(now);
+  await scheduleThresholdAlarm(eligible, now);
   await updateBadge(eligible, now);
 }
+
+/* ---- Precise limit timing ---- */
+
+const LIMIT_ALARM = "limit-threshold";
+
+/**
+ * The heartbeat only ticks every 30s, so a limit crossing could be
+ * noticed up to 30s late. If the site being watched right now has a
+ * limit, set a one-shot alarm for the moment it will cross its next
+ * threshold (80% or 100%), so the in-page notice lands on time.
+ */
+async function scheduleThresholdAlarm(domain: string | null, now: number): Promise<void> {
+  await chrome.alarms.clear(LIMIT_ALARM);
+  if (!domain) return;
+  const settings = await getSettings();
+  const limitMin = settings.limits[domain];
+  if (limitMin === undefined || limitMin <= 0) return;
+  const limitMs = limitMin * 60_000;
+  const day = await getDay(now);
+  const used = day[domain]?.totalMs ?? 0;
+  let msToGo: number | null = null;
+  if (used < limitMs * 0.8) msToGo = limitMs * 0.8 - used;
+  else if (used < limitMs) msToGo = limitMs - used;
+  if (msToGo === null) return;
+  // Alarms are clamped to 30s granularity, so this alone can be late.
+  // It stays as the fallback for when no page timer is running.
+  await chrome.alarms.create(LIMIT_ALARM, { when: now + msToGo + 1_000 });
+
+  // Exact timing: hand the countdown to the site's own tabs. The content
+  // script runs a page timer and pings us the moment it expires.
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id === undefined || !tab.url) continue;
+    if (domainFromUrl(tab.url) !== domain) continue;
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: "logbook-limit-eta", msToGo });
+    } catch {
+      // No content script here; the alarm fallback covers it.
+    }
+  }
+}
+
+// The content script's countdown expired: check limits right now.
+chrome.runtime.onMessage.addListener((msg: { type?: string } | undefined) => {
+  if (msg?.type === "logbook-check") queueTick();
+});
 
 /* ---- Toolbar badge: time spent today on the site you are on now. ---- */
 
@@ -174,23 +267,69 @@ async function checkLimits(now: number): Promise<void> {
       fired.limit = true;
       fired.warn = true;
       changed = true;
-      notify(
-        `limit-${domain}-${now}`,
-        `Time limit reached: ${domain}`,
-        `You have spent ${formatDuration(used)} today. Your limit is ${formatDuration(limitMs)}.`,
-      );
+      await alertUser("limit", domain, used, limitMs, now);
     } else if (!fired.warn && used >= limitMs * 0.8) {
       fired.warn = true;
       changed = true;
-      notify(
-        `warn-${domain}-${now}`,
-        `Close to your limit: ${domain}`,
-        `${formatDuration(used)} of ${formatDuration(limitMs)} used today.`,
-      );
+      await alertUser("warn", domain, used, limitMs, now);
     }
   }
 
   if (changed) await chrome.storage.local.set({ [NOTICES_KEY]: notices });
+}
+
+/**
+ * Warn the user in the page itself: send a message to every open tab on
+ * the domain, where the content script draws a banner (80%) or an
+ * overlay (100%). If no tab took the message (site closed, or a page the
+ * content script cannot run on), fall back to a system notification.
+ */
+async function alertUser(
+  kind: "warn" | "limit",
+  domain: string,
+  usedMs: number,
+  limitMs: number,
+  now: number,
+): Promise<void> {
+  const tabs = await chrome.tabs.query({});
+  let delivered = false;
+  const message = { type: "logbook-limit", kind, domain, usedMs, limitMs };
+  for (const tab of tabs) {
+    if (tab.id === undefined || !tab.url) continue;
+    if (domainFromUrl(tab.url) !== domain) continue;
+    try {
+      await chrome.tabs.sendMessage(tab.id, message);
+      delivered = true;
+    } catch {
+      // No content script listening (tab predates the extension, or its
+      // script was orphaned by a reload). Inject now and resend.
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content.js"],
+        });
+        await chrome.tabs.sendMessage(tab.id, message);
+        delivered = true;
+      } catch {
+        // Restricted page; the notification fallback covers it.
+      }
+    }
+  }
+  if (delivered) return;
+
+  if (kind === "limit") {
+    notify(
+      `limit-${domain}-${now}`,
+      `Time limit reached: ${domain}`,
+      `You have spent ${formatDuration(usedMs)} today. Your limit is ${formatDuration(limitMs)}.`,
+    );
+  } else {
+    notify(
+      `warn-${domain}-${now}`,
+      `Close to your limit: ${domain}`,
+      `${formatDuration(usedMs)} of ${formatDuration(limitMs)} used today.`,
+    );
+  }
 }
 
 function notify(id: string, title: string, message: string): void {

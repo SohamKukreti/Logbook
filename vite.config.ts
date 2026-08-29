@@ -25,12 +25,17 @@ function manifestPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [manifestPlugin()],
+  // Keep built JS ASCII-only: the content script runs in pages whose
+  // charset we don't control, so non-ASCII literals could be mangled.
+  esbuild: { charset: "ascii" },
   build: {
     outDir: `dist/${target}`,
     emptyOutDir: true,
     rollupOptions: {
       input: {
         background: resolve(__dirname, "src/background.ts"),
+        // Content script: must stay import-free (plain script, not a module).
+        content: resolve(__dirname, "src/content/limit-banner.ts"),
         popup: resolve(__dirname, "popup.html"),
         dashboard: resolve(__dirname, "dashboard.html"),
       },
