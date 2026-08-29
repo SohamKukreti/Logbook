@@ -9,6 +9,7 @@ import {
   dateKey,
   nextMidnight,
   pruneOldDays,
+  pruneSites,
   purgeDomain,
   SETTINGS_KEY,
   type Settings,
@@ -32,6 +33,8 @@ chrome.runtime.onStartup.addListener(() => void init());
 async function init(): Promise<void> {
   await chrome.alarms.create("heartbeat", { periodInMinutes: 0.5 });
   await pruneOldDays(Date.now());
+  const settings = await getSettings();
+  await pruneSites(settings.pinned);
   queueTick();
 }
 

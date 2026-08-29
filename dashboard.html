@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Logbook — Dashboard</title>
+    <title>Logbook</title>
     <link rel="stylesheet" href="/src/dashboard/style.css" />
   </head>
   <body>
     <header>
       <h1>Logbook</h1>
       <div class="header-right">
-        <div class="range-toggle" role="group" aria-label="Date range">
+        <div id="range-toggle" class="range-toggle" role="group" aria-label="Date range">
           <button id="range-1">Today</button>
           <button id="range-7" class="active">7 days</button>
           <button id="range-30">30 days</button>
@@ -19,18 +19,17 @@
       </div>
     </header>
 
-    <!-- Weekly summary -->
-    <section id="summary">
-      <div class="summary-main">
-        <p class="label" id="summary-label">This week</p>
-        <p class="big" id="week-total"></p>
-        <p class="compare" id="week-compare"></p>
-      </div>
-      <div id="summary-sites"></div>
-    </section>
-
-    <!-- Overview: chart + table -->
+    <!-- Overview: summary + chart + table + limits + export -->
     <div id="overview">
+      <section id="summary">
+        <div class="summary-main">
+          <p class="label" id="summary-label">This week</p>
+          <p class="big" id="week-total"></p>
+          <p class="compare" id="week-compare"></p>
+        </div>
+        <div id="summary-sites"></div>
+      </section>
+
       <section id="chart-section">
         <h2 id="chart-title">Time per day</h2>
         <div id="chart" class="chart"></div>
@@ -45,49 +44,91 @@
               <th class="num">Visits</th>
               <th class="num">Total</th>
               <th class="num">Avg</th>
+              <th class="pin-col"><span class="visually-hidden">Pin</span></th>
             </tr>
           </thead>
           <tbody id="sites-body"></tbody>
         </table>
         <p id="empty" hidden>No entries in this range.</p>
-        <p class="hint">Click a site to see its history.</p>
+        <p class="hint">Click a site to see its history. The ribbon pins a site to the top.</p>
+      </section>
+
+      <!-- Limits -->
+      <section id="limits">
+        <h2>Daily limits</h2>
+        <p class="hint">
+          Get a notification at 80% and at 100% of a site's daily limit.
+        </p>
+        <form id="limit-form" class="limit-form">
+          <input id="limit-site" type="text" placeholder="youtube.com" autocomplete="off" aria-label="Site" />
+          <input id="limit-minutes" type="number" min="1" placeholder="60" aria-label="Minutes per day" />
+          <span class="unit">min/day</span>
+          <button type="submit">Set</button>
+        </form>
+        <ul id="limit-list"></ul>
+      </section>
+
+      <!-- Export -->
+      <section id="export">
+        <h2>Export</h2>
+        <p class="hint">Everything stored (up to 365 days), one row per site per day.</p>
+        <div class="export-buttons">
+          <button id="export-csv">Download CSV</button>
+          <button id="export-json">Download JSON</button>
+        </div>
       </section>
     </div>
 
     <!-- Per-site drill-down -->
     <div id="site-view" hidden>
-      <button id="back" class="linkish">&larr; All sites</button>
+      <button id="back" class="linkish"><span class="back-arrow">&larr;</span> All sites</button>
+
       <section>
-        <h2 id="site-name"></h2>
-        <p id="site-stats" class="site-stats"></p>
+        <div class="site-head">
+          <h2 id="site-name"></h2>
+          <button id="pin-site" class="ribbon-btn" title="Pin this site">
+            <span class="ribbon"></span>
+          </button>
+          <span id="site-share" class="site-share"></span>
+        </div>
+        <div id="site-limit-box">
+          <p id="site-limit-line" class="site-stats"></p>
+          <form id="site-limit-form" class="limit-form">
+            <input id="site-limit-minutes" type="number" min="1" placeholder="60" aria-label="Minutes per day" />
+            <span class="unit">min/day</span>
+            <button type="submit">Set limit</button>
+            <button type="button" id="site-limit-remove" hidden>Remove</button>
+          </form>
+        </div>
+      </section>
+
+      <section>
+        <div id="site-tiles" class="tiles"></div>
+      </section>
+
+      <section>
+        <h2>Last 30 days</h2>
         <div id="site-chart" class="chart"></div>
       </section>
+
+      <section class="panel">
+        <h2 id="heatmap-title">Activity</h2>
+        <div id="heatmap" class="hm-wrap"></div>
+        <div class="panel-foot">
+          <div id="hm-legend" class="hm-legend"></div>
+          <p id="hm-streak" class="foot-stat"></p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>By day of week</h2>
+        <div id="dow-chart"></div>
+        <div class="panel-foot">
+          <p id="dow-hint" class="hint"></p>
+          <p id="dow-avg" class="foot-stat"></p>
+        </div>
+      </section>
     </div>
-
-    <!-- Limits -->
-    <section id="limits">
-      <h2>Daily limits</h2>
-      <p class="hint">
-        Get a notification at 80% and at 100% of a site's daily limit.
-      </p>
-      <form id="limit-form">
-        <input id="limit-site" type="text" placeholder="youtube.com" autocomplete="off" aria-label="Site" />
-        <input id="limit-minutes" type="number" min="1" placeholder="60" aria-label="Minutes per day" />
-        <span class="unit">min/day</span>
-        <button type="submit">Set</button>
-      </form>
-      <ul id="limit-list"></ul>
-    </section>
-
-    <!-- Export -->
-    <section id="export">
-      <h2>Export</h2>
-      <p class="hint">Everything stored (up to 90 days), one row per site per day.</p>
-      <div class="export-buttons">
-        <button id="export-csv">Download CSV</button>
-        <button id="export-json">Download JSON</button>
-      </div>
-    </section>
 
     <script type="module" src="/src/dashboard/main.ts"></script>
   </body>

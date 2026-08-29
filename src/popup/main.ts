@@ -1,6 +1,7 @@
 import { domainFromInput } from "../lib/domain";
 import { formatDuration } from "../lib/format";
 import {
+  displayName,
   getDay,
   getSettings,
   setSettings,
@@ -37,8 +38,8 @@ function renderStats(day: DayRecord): void {
     siteTd.className = "site";
     const name = document.createElement("span");
     name.className = "name";
-    name.textContent = domain;
-    name.title = domain;
+    name.textContent = displayName(domain);
+    name.title = displayName(domain);
     siteTd.appendChild(name);
 
     const visitsTd = document.createElement("td");

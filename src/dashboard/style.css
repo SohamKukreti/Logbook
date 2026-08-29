@@ -303,6 +303,20 @@ td.site .name {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 320px;
+  min-width: 0;
+}
+
+.other-row {
+  cursor: default;
+}
+
+.other-row .name {
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+.other-row:hover td {
+  background: transparent;
 }
 
 .row-bar {
@@ -343,6 +357,16 @@ td.num {
   text-decoration: underline;
 }
 
+/* The serif's arrow glyph draws small and sits low; scale it up and
+   lift it so it lines up with the text's optical center. */
+.back-arrow {
+  display: inline-block;
+  font-size: 21px;
+  line-height: 0;
+  transform: translateY(-2px);
+  margin-right: 2px;
+}
+
 #site-name {
   font-family: var(--display);
   font-size: 24px;
@@ -356,13 +380,308 @@ td.num {
 }
 
 .site-stats {
-  margin: 0 0 16px;
+  margin: 0 0 10px;
+  color: var(--ink-muted);
+}
+
+.site-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.site-share {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border: 1px solid var(--ink-faint);
+  border-radius: 2px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+/* ---- Boxed sections (heatmap, day-of-week) ---- */
+
+.panel {
+  border: 1px solid var(--ink-faint);
+  border-radius: 4px;
+  padding: 18px 20px 14px;
+}
+
+.panel-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--feint);
+}
+
+.foot-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+.foot-val {
+  font-family: var(--mono);
+  font-size: 17px;
+}
+
+/* ---- Pin ribbon (a bookmark ribbon, like marking a page) ---- */
+
+.ribbon-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  line-height: 0;
+  flex: none;
+}
+
+.ribbon {
+  display: inline-block;
+  width: 11px;
+  height: 18px;
+  background: var(--ink-faint);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 68%, 0 100%);
+}
+
+.ribbon-btn:hover .ribbon {
+  background: color-mix(in srgb, var(--red) 55%, transparent);
+}
+
+.ribbon-btn.pinned .ribbon {
+  background: var(--red);
+}
+
+.row-pin .ribbon {
+  width: 13px;
+  height: 21px;
+  opacity: 0;
+}
+
+.row-pin.pinned .ribbon {
+  opacity: 1;
+}
+
+tbody tr:hover .row-pin .ribbon,
+.row-pin:focus-visible .ribbon {
+  opacity: 1;
+}
+
+th.pin-col,
+td.pin-col {
+  width: 30px;
+  text-align: right;
+  padding-left: 14px;
+}
+
+td.pin-col {
+  /* The ribbon hangs from the row's top edge, like one laid in a book. */
+  vertical-align: top;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* ---- Stat tiles ---- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 4px;
+}
+
+.tile-value {
+  margin: 3px 0 0;
+  font-family: var(--mono);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.tile-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-muted);
+}
+
+/* ---- Activity heatmap ---- */
+
+.hm-wrap {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.hm-months {
+  display: flex;
+  gap: 3px;
+  margin-left: 37px;
+  margin-bottom: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+.hm-months span {
+  flex: none;
+  width: 13px;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.hm-body {
+  display: flex;
+  gap: 3px;
+}
+
+.hm-days {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 34px;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-muted);
+}
+
+.hm-days span {
+  height: 13px;
+  line-height: 13px;
+}
+
+.hm-grid {
+  display: flex;
+  gap: 3px;
+}
+
+.hm-week {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hm-cell {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.hm-legend .hm-cell {
+  width: 10px;
+  height: 10px;
+}
+
+.hm-cell.blank {
+  background: transparent;
+}
+
+.hm-cell.l0 {
+  background: rgba(42, 36, 27, 0.07);
+}
+
+.hm-cell.l1 {
+  background: color-mix(in srgb, var(--red) 25%, var(--paper));
+}
+
+.hm-cell.l2 {
+  background: color-mix(in srgb, var(--red) 50%, var(--paper));
+}
+
+.hm-cell.l3 {
+  background: color-mix(in srgb, var(--red) 75%, var(--paper));
+}
+
+.hm-cell.l4 {
+  background: var(--red);
+}
+
+.hm-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+
+.hm-legend span:first-child {
+  margin-right: 2px;
+}
+
+.hm-legend span:last-child {
+  margin-left: 2px;
+}
+
+/* ---- Day-of-week pattern ---- */
+
+.dow-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.dow-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  width: 36px;
+  flex: none;
+  color: var(--ink-muted);
+}
+
+.dow-track {
+  flex: 1;
+  display: block;
+}
+
+.dow-bar {
+  display: block;
+  height: 11px;
+  background: var(--red);
+  opacity: 0.65;
+  border-radius: 2px;
+  min-width: 0;
+}
+
+.dow-row:hover .dow-bar {
+  opacity: 1;
+}
+
+.dow-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  width: 64px;
+  flex: none;
+  text-align: right;
   color: var(--ink-muted);
 }
 
 /* ---- Limits ---- */
 
-#limit-form {
+.limit-form {
   display: flex;
   gap: 10px;
   align-items: baseline;
@@ -370,7 +689,7 @@ td.num {
   margin-top: 12px;
 }
 
-#limit-form input {
+.limit-form input {
   padding: 5px 4px;
   border: none;
   border-bottom: 1px dotted var(--ink-faint);
@@ -384,7 +703,8 @@ td.num {
   min-width: 180px;
 }
 
-#limit-minutes {
+#limit-minutes,
+#site-limit-minutes {
   width: 80px;
   font-family: var(--mono);
 }
@@ -394,12 +714,13 @@ td.num {
   font-size: 14px;
 }
 
-#limit-form input:focus {
+.limit-form input:focus {
   outline: none;
   border-color: var(--red);
 }
 
 button[type="submit"],
+#site-limit-remove,
 .export-buttons button {
   font-family: var(--mono);
   font-size: 13px;
@@ -415,6 +736,7 @@ button[type="submit"],
 }
 
 button[type="submit"]:hover,
+#site-limit-remove:hover,
 .export-buttons button:hover {
   opacity: 1;
   background: color-mix(in srgb, var(--red) 10%, transparent);
@@ -478,5 +800,8 @@ button:focus-visible {
   }
   #summary-sites {
     margin-left: 0;
+  }
+  .tiles {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

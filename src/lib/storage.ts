@@ -19,19 +19,30 @@ export interface Settings {
   ignore: string[];
   /** domain -> daily limit in minutes. */
   limits: Record<string, number>;
+  /** Domains marked to always stay: never pruned, sorted first. */
+  pinned: string[];
 }
 
 export const STATE_KEY = "state";
 export const SETTINGS_KEY = "settings";
 export const DAY_PREFIX = "day:";
-export const RETENTION_DAYS = 90;
+export const RETENTION_DAYS = 365;
+/** Keep at most this many distinct sites; the rest fold into OTHER_DOMAIN. */
+export const MAX_SITES = 200;
+/** Pseudo-domain that absorbs pruned sites' time. Parentheses keep it from
+    colliding with any real hostname. */
+export const OTHER_DOMAIN = "(other)";
+
+export function displayName(domain: string): string {
+  return domain === OTHER_DOMAIN ? "everything else" : domain;
+}
 
 export function defaultState(): TrackerState {
   return { currentDomain: null, lastTick: 0, lastSeen: {} };
 }
 
 export function defaultSettings(): Settings {
-  return { ignore: [], limits: {} };
+  return { ignore: [], limits: {}, pinned: [] };
 }
 
 /** Local-time date key, e.g. "2026-08-24". */
@@ -102,6 +113,53 @@ export async function pruneOldDays(now: number): Promise<void> {
     (k) => k.startsWith(DAY_PREFIX) && k.slice(DAY_PREFIX.length) < cutoff,
   );
   if (stale.length) await chrome.storage.local.remove(stale);
+}
+
+/**
+ * Cap the number of distinct sites at MAX_SITES. Pinned sites always stay;
+ * beyond that, the top MAX_SITES by all-time total stay. A dropped site's
+ * time and sessions fold into the day's OTHER_DOMAIN bucket, so daily
+ * totals stay honest — only the name is forgotten.
+ */
+export async function pruneSites(pinned: string[]): Promise<void> {
+  const all = await chrome.storage.local.get(null);
+  const totals: Record<string, number> = {};
+  const dayKeys: string[] = [];
+  for (const [key, value] of Object.entries(all)) {
+    if (!key.startsWith(DAY_PREFIX)) continue;
+    dayKeys.push(key);
+    for (const [domain, s] of Object.entries(value as DayRecord)) {
+      if (domain === OTHER_DOMAIN) continue;
+      totals[domain] = (totals[domain] ?? 0) + s.totalMs;
+    }
+  }
+
+  const ranked = Object.keys(totals).sort((a, b) => totals[b]! - totals[a]!);
+  if (ranked.length <= MAX_SITES) return;
+  const keep = new Set(ranked.slice(0, MAX_SITES));
+  for (const domain of pinned) keep.add(domain);
+
+  const updates: Record<string, DayRecord> = {};
+  for (const key of dayKeys) {
+    const rec = all[key] as DayRecord;
+    const next: DayRecord = {};
+    const other = { ...(rec[OTHER_DOMAIN] ?? { totalMs: 0, sessions: 0 }) };
+    let dropped = false;
+    for (const [domain, s] of Object.entries(rec)) {
+      if (domain === OTHER_DOMAIN) continue;
+      if (keep.has(domain)) {
+        next[domain] = s;
+      } else {
+        other.totalMs += s.totalMs;
+        other.sessions += s.sessions;
+        dropped = true;
+      }
+    }
+    if (!dropped) continue;
+    if (other.totalMs > 0 || other.sessions > 0) next[OTHER_DOMAIN] = other;
+    updates[key] = next;
+  }
+  if (Object.keys(updates).length) await chrome.storage.local.set(updates);
 }
 
 /** Remove a domain's data from every stored day (used when it is ignored). */
