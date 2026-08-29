@@ -1,6 +1,6 @@
 {
   "name": "logbook",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Chrome extension that tracks time per website: visits, total time, and average per session. Local-only.",
   "license": "MIT",
   "author": "Soham Kukreti <kukretisoham@gmail.com>",
